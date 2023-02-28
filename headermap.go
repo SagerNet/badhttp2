@@ -5,8 +5,9 @@
 package http2
 
 import (
-	"net/http"
 	"sync"
+
+	"github.com/sagernet/badhttp"
 )
 
 var (

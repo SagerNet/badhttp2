@@ -31,14 +31,15 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/sagernet/badhttp"
+	"github.com/sagernet/badhttp2"
 	"github.com/sagernet/badhttp2/hpack"
-	"golang.org/x/net/http2"
+
 	"golang.org/x/term"
 )
 
@@ -188,7 +189,7 @@ func (app *h2i) Main() error {
 	}
 	defer term.Restore(0, oldState)
 
-	var screen = struct {
+	screen := struct {
 		io.Reader
 		io.Writer
 	}{os.Stdin, os.Stdout}
@@ -242,7 +243,6 @@ func (app *h2i) Main() error {
 		}
 		newLine = line[:len(line)-len(soFar)] + match[0]
 		return newLine, len(newLine), true
-
 	}
 
 	errc := make(chan error, 2)

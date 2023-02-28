@@ -17,18 +17,17 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/textproto"
 	"os"
 	"strings"
 
+	"github.com/sagernet/badhttp"
+	"github.com/sagernet/badhttp2"
+
 	"golang.org/x/net/http/httpguts"
-	"golang.org/x/net/http2"
 )
 
-var (
-	http2VerboseLogs bool
-)
+var http2VerboseLogs bool
 
 func init() {
 	e := os.Getenv("GODEBUG")

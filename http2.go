@@ -20,12 +20,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/sagernet/badhttp"
 
 	"golang.org/x/net/http/httpguts"
 )
@@ -70,9 +71,7 @@ const (
 	defaultMaxReadFrameSize = 1 << 20
 )
 
-var (
-	clientPreface = []byte(ClientPreface)
-)
+var clientPreface = []byte(ClientPreface)
 
 type streamState int
 

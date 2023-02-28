@@ -36,7 +36,6 @@ import (
 	"log"
 	"math"
 	"net"
-	"net/http"
 	"net/textproto"
 	"net/url"
 	"os"
@@ -47,7 +46,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sagernet/badhttp"
 	"github.com/sagernet/badhttp2/hpack"
+	aTLS "github.com/sagernet/sing/common/tls"
+
 	"golang.org/x/net/http/httpguts"
 )
 
@@ -262,7 +264,7 @@ func ConfigureServer(s *http.Server, conf *Server) error {
 	}
 	s.RegisterOnShutdown(conf.state.startGracefulShutdown)
 
-	if s.TLSConfig == nil {
+	/*if s.TLSConfig == nil {
 		s.TLSConfig = new(tls.Config)
 	} else if s.TLSConfig.CipherSuites != nil && s.TLSConfig.MinVersion < tls.VersionTLS13 {
 		// If they already provided a TLS 1.0–1.2 CipherSuite list, return an
@@ -281,7 +283,7 @@ func ConfigureServer(s *http.Server, conf *Server) error {
 		if !haveRequired {
 			return fmt.Errorf("http2: TLSConfig.CipherSuites is missing an HTTP/2-required AES_128_GCM_SHA256 cipher (need at least one of TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 or TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256)")
 		}
-	}
+	}*/
 
 	// Note: not setting MinVersion to tls.VersionTLS12,
 	// as we don't want to interfere with HTTP/1.1 traffic
@@ -290,19 +292,19 @@ func ConfigureServer(s *http.Server, conf *Server) error {
 	// during next-proto selection, but using TLS <1.2 with
 	// HTTP/2 is still the client's bug.
 
-	s.TLSConfig.PreferServerCipherSuites = true
+	// s.TLSConfig.PreferServerCipherSuites = true
 
-	if !strSliceContains(s.TLSConfig.NextProtos, NextProtoTLS) {
-		s.TLSConfig.NextProtos = append(s.TLSConfig.NextProtos, NextProtoTLS)
+	if !strSliceContains(s.TLSConfig.NextProtos(), NextProtoTLS) {
+		s.TLSConfig.SetNextProtos(append(s.TLSConfig.NextProtos(), NextProtoTLS))
 	}
-	if !strSliceContains(s.TLSConfig.NextProtos, "http/1.1") {
-		s.TLSConfig.NextProtos = append(s.TLSConfig.NextProtos, "http/1.1")
+	if !strSliceContains(s.TLSConfig.NextProtos(), "http/1.1") {
+		s.TLSConfig.SetNextProtos(append(s.TLSConfig.NextProtos(), "http/1.1"))
 	}
 
 	if s.TLSNextProto == nil {
-		s.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){}
+		s.TLSNextProto = map[string]func(*http.Server, aTLS.Conn, http.Handler){}
 	}
-	protoHandler := func(hs *http.Server, c *tls.Conn, h http.Handler) {
+	protoHandler := func(hs *http.Server, c aTLS.Conn, h http.Handler) {
 		if testHookOnConn != nil {
 			testHookOnConn()
 		}

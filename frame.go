@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/sagernet/badhttp2/hpack"
+
 	"golang.org/x/net/http/httpguts"
 )
 
@@ -1529,7 +1530,7 @@ func (fr *Framer) readMetaFrame(hf *HeadersFrame) (*MetaHeadersFrame, error) {
 	mh := &MetaHeadersFrame{
 		HeadersFrame: hf,
 	}
-	var remainSize = fr.maxHeaderListSize()
+	remainSize := fr.maxHeaderListSize()
 	var sawRegular bool
 
 	var invalid error // pseudo header field errors

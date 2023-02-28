@@ -8,10 +8,11 @@ package http2
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
-	"net/http"
 	"sync"
+
+	"github.com/sagernet/badhttp"
+	aTLS "github.com/sagernet/sing/common/tls"
 )
 
 // ClientConnPool manages a pool of HTTP/2 client connections.
@@ -158,7 +159,7 @@ func (c *dialCall) dial(ctx context.Context, addr string) {
 // This code decides which ones live or die.
 // The return value used is whether c was used.
 // c is never closed.
-func (p *clientConnPool) addConnIfNeeded(key string, t *Transport, c *tls.Conn) (used bool, err error) {
+func (p *clientConnPool) addConnIfNeeded(key string, t *Transport, c aTLS.Conn) (used bool, err error) {
 	p.mu.Lock()
 	for _, cc := range p.conns[key] {
 		if cc.CanTakeNewRequest() {
@@ -194,7 +195,7 @@ type addConnCall struct {
 	err  error
 }
 
-func (c *addConnCall) run(t *Transport, key string, tc *tls.Conn) {
+func (c *addConnCall) run(t *Transport, key string, tc aTLS.Conn) {
 	cc, err := t.NewClientConn(tc)
 
 	p := c.p

@@ -21,7 +21,6 @@ import (
 	"math"
 	mathrand "math/rand"
 	"net"
-	"net/http"
 	"net/http/httptrace"
 	"net/textproto"
 	"os"
@@ -32,7 +31,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/sagernet/badhttp"
 	"github.com/sagernet/badhttp2/hpack"
+	aTLS "github.com/sagernet/sing/common/tls"
+
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/idna"
 )
@@ -211,7 +213,6 @@ func (t *Transport) pingTimeout() time.Duration {
 		return 15 * time.Second
 	}
 	return t.PingTimeout
-
 }
 
 // ConfigureTransport configures a net/http HTTP/1 Transport to use HTTP/2.
@@ -240,16 +241,16 @@ func configureTransports(t1 *http.Transport) (*Transport, error) {
 	if err := registerHTTPSProtocol(t1, noDialH2RoundTripper{t2}); err != nil {
 		return nil, err
 	}
-	if t1.TLSClientConfig == nil {
+	/*if t1.TLSClientConfig == nil {
 		t1.TLSClientConfig = new(tls.Config)
+	}*/
+	if !strSliceContains(t1.TLSClientConfig.NextProtos(), "h2") {
+		t1.TLSClientConfig.SetNextProtos(append(t1.TLSClientConfig.NextProtos(), "h2"))
 	}
-	if !strSliceContains(t1.TLSClientConfig.NextProtos, "h2") {
-		t1.TLSClientConfig.NextProtos = append([]string{"h2"}, t1.TLSClientConfig.NextProtos...)
+	if !strSliceContains(t1.TLSClientConfig.NextProtos(), "http/1.1") {
+		t1.TLSClientConfig.SetNextProtos(append(t1.TLSClientConfig.NextProtos(), "http/1.1"))
 	}
-	if !strSliceContains(t1.TLSClientConfig.NextProtos, "http/1.1") {
-		t1.TLSClientConfig.NextProtos = append(t1.TLSClientConfig.NextProtos, "http/1.1")
-	}
-	upgradeFn := func(authority string, c *tls.Conn) http.RoundTripper {
+	upgradeFn := func(authority string, c aTLS.Conn) http.RoundTripper {
 		addr := authorityAddr("https", authority)
 		if used, err := connPool.addConnIfNeeded(addr, t2, c); err != nil {
 			go c.Close()
@@ -264,7 +265,7 @@ func configureTransports(t1 *http.Transport) (*Transport, error) {
 		return t2
 	}
 	if m := t1.TLSNextProto; len(m) == 0 {
-		t1.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{
+		t1.TLSNextProto = map[string]func(string, aTLS.Conn) http.RoundTripper{
 			"h2": upgradeFn,
 		}
 	} else {
@@ -1814,7 +1815,6 @@ func (cs *clientStream) awaitFlowControl(maxBytes int) (taken int32, err error) 
 		if a := cs.flow.available(); a > 0 {
 			take := a
 			if int(take) > maxBytes {
-
 				take = int32(maxBytes) // can't truncate int; take is int32
 			}
 			if take > int32(cc.maxFrameSize) {
